@@ -1329,6 +1329,13 @@ const LAYER_DEFS = [
     popup:p=>[['Hidrografia',p.Hidrografia],['APP (m)',p.APP_m],['Área',p['Área_ha']?p['Área_ha'].toLocaleString('pt-BR',{maximumFractionDigits:2})+' ha':'—']]
   },
   {
+    id:'remanescentes', group:'env', name:'Remanescentes Florestais', geomType:'polygon',
+    desc:'Fragmentos de vegetação nativa mapeados pelo Inventário Florestal do Estado de São Paulo (Instituto Florestal/SIFESP, 2020), recortados pelo limite municipal',
+    color:'#1f8a4c', fillOpacity:0.55, weight:0.8, dashArray:null,
+    defaultOn:false, data:DATA_REMANESCENTES,
+    popup:p=>[['Fitofisionomia',p.FITOFISION],['Área',p.AREA_HA?p.AREA_HA.toLocaleString('pt-BR',{maximumFractionDigits:2})+' ha':'—']]
+  },
+  {
     id:'bacia_jaguari', group:'env', name:'Sub-bacia do Rio Jaguari', geomType:'basin',
     desc:'Área de drenagem e rede hidrográfica do Rio Jaguari em Jaguariúna',
     color:'#1d4ed8', fillOpacity:0.25, weight:2, dashArray:null,
@@ -1351,13 +1358,6 @@ const LAYER_DEFS = [
     defaultOn:false, dataArea:DATA_AREA_ATIBAIA, dataRios:DATA_RIO_ATIBAIA,
     popupArea:p=>[['Sub-bacia',p.Sub_bacia],['Área',p['Área_ha']?p['Área_ha'].toLocaleString('pt-BR',{maximumFractionDigits:1})+' ha':'—']],
     popupRio:p=>[['Sub-bacia',p.Sub_bacia],['Tipo',p.Tipo],['Extensão',p['Extensão_km']?p['Extensão_km'].toLocaleString('pt-BR',{maximumFractionDigits:3})+' km':'—']]
-  },
-  {
-    id:'remanescentes', group:'env', name:'Remanescentes Florestais', geomType:'polygon',
-    desc:'Fragmentos de vegetação nativa mapeados pelo Inventário Florestal do Estado de São Paulo (Instituto Florestal/SIFESP, 2020), recortados pelo limite municipal',
-    color:'#1f8a4c', fillOpacity:0.55, weight:0.8, dashArray:null,
-    defaultOn:false, data:DATA_REMANESCENTES,
-    popup:p=>[['Fitofisionomia',p.FITOFISION],['Área',p.AREA_HA?p.AREA_HA.toLocaleString('pt-BR',{maximumFractionDigits:2})+' ha':'—']]
   }
 ];
 
