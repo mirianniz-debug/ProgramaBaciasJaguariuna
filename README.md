@@ -9,3 +9,7 @@ O `index.html` é responsivo, mas isso só funciona se o `<iframe>` que o incorp
 ```
 
 Evite embeds como `<iframe width="800" height="120" ...>`: uma largura fixa maior que a tela do celular obriga a página externa a rolar horizontalmente, cortando tanto o geoportal quanto outros elementos da página.
+
+## Licença
+
+Todos os direitos reservados. Ver [LICENSE](LICENSE).
