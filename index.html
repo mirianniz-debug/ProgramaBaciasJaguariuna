@@ -725,6 +725,9 @@ document.querySelectorAll('.basemap-btn').forEach(btn=>{
    CONSTRUÇÃO DAS CAMADAS + PAINEL LATERAL
    ========================================================= */
 const leafletLayers = {};
+/* Total instalado segundo o Plano Municipal de Mata Atlântica (item 5.3);
+   a camada tem 19 pontos com localização. */
+const BIODIGESTORES_TOTAL = 20;
 let unionBounds = null;
 
 function extendUnion(layer){
@@ -998,8 +1001,8 @@ function renderPanel(){
       statHtml = `
         <div class="area-stat" style="--layer-color:${def.color}">
           <div class="area-row">
-            <span class="area-value">${def.count}</span>
-            <span class="area-pct">unidades instaladas</span>
+            <span class="area-value">${def.id==='biodigestores' ? BIODIGESTORES_TOTAL : def.count}</span>
+            <span class="area-pct">${def.id==='biodigestores' ? 'instalados · 19 no mapa' : 'unidades instaladas'}</span>
           </div>
         </div>`;
     }else if(def.geomType==='basin'){
@@ -1133,7 +1136,7 @@ const propSet = new Set();
 });
 document.getElementById('statHa').textContent = haReflorestado.toLocaleString('pt-BR',{maximumFractionDigits:0});
 document.getElementById('statProp').textContent = propSet.size;
-document.getElementById('statBiod').textContent = (DATA_BIODIGESTORES.features||[]).length;
+document.getElementById('statBiod').textContent = BIODIGESTORES_TOTAL;
 });
 </script>
 </body>
