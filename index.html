@@ -912,7 +912,7 @@ LAYER_DEFS.forEach(def=>{
 
 /* ---------- Marcadores "tem foto" sobre as propriedades documentadas ----------
    Convite visual pra clicar: ícone de câmera com pulso, um por propriedade
-   (centróide ponderado por área de todas as suas partes), reunidos na mesma
+   (dentro do maior polígono de cada uma), reunidos na mesma
    camada de Reflorestamento — aparecem e somem junto com o checkbox dela. */
 function makePhotoMarker(lat, lon, photos, popupTitle){
   const icon = L.divIcon({
@@ -930,10 +930,34 @@ function makePhotoMarker(lat, lon, photos, popupTitle){
 }
 
 const photoMarkersLayer = L.layerGroup();
+/* Ponto bem no interior de um polígono: amostra uma grade na caixa do anel e
+   escolhe o ponto dentro do polígono mais distante das bordas. */
+function interiorPoint(poly){
+  const ring = poly[0];
+  let minx=Infinity,miny=Infinity,maxx=-Infinity,maxy=-Infinity;
+  ring.forEach(p=>{minx=Math.min(minx,p[0]);maxx=Math.max(maxx,p[0]);miny=Math.min(miny,p[1]);maxy=Math.max(maxy,p[1]);});
+  const N=40; let best=null, bestD=-1;
+  for(let i=0;i<=N;i++) for(let j=0;j<=N;j++){
+    const x=minx+(maxx-minx)*i/N, y=miny+(maxy-miny)*j/N;
+    if(!pointInRing(x,y,ring)) continue;
+    if(poly.slice(1).some(h=>pointInRing(x,y,h))) continue;
+    let d=Infinity;
+    for(let k=0;k<ring.length-1;k++){
+      const ax=ring[k][0],ay=ring[k][1],bx=ring[k+1][0],by=ring[k+1][1];
+      const dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy;
+      let t=l2?((x-ax)*dx+(y-ay)*dy)/l2:0; t=Math.max(0,Math.min(1,t));
+      d=Math.min(d,Math.hypot(x-(ax+t*dx),y-(ay+t*dy)));
+    }
+    if(d>bestD){bestD=d;best=[x,y];}
+  }
+  return best || [ring[0][0],ring[0][1]];
+}
 Object.keys(FARM_PHOTOS).forEach(local=>{
   const feats = (DATA_REFLORESTAMENTO.features||[]).filter(f=>f.properties.Local===local);
   if(!feats.length) return;
-  let sx=0, sy=0, sArea=0;
+  /* Ícone dentro do MAIOR polígono da propriedade (o centro de todas as partes
+     pode cair longe de qualquer área reflorestada). */
+  let bigPoly=null, bigArea=0;
   feats.forEach(f=>{
     const g = f.geometry;
     const polys = g.type==='MultiPolygon' ? g.coordinates : [g.coordinates];
@@ -941,15 +965,12 @@ Object.keys(FARM_PHOTOS).forEach(local=>{
       const ring = poly[0];
       const lat0 = ring.reduce((s,p)=>s+p[1],0)/ring.length;
       const area = ringAreaM2(ring, lat0);
-      let cx=0, cy=0;
-      for(let i=0;i<ring.length-1;i++){ cx+=ring[i][0]; cy+=ring[i][1]; }
-      cx /= (ring.length-1); cy /= (ring.length-1);
-      sx += cx*area; sy += cy*area; sArea += area;
+      if(area>bigArea){bigArea=area;bigPoly=poly;}
     });
   });
-  if(sArea<=0) return;
-  const lon = sx/sArea, lat = sy/sArea;
-  photoMarkersLayer.addLayer(makePhotoMarker(lat, lon, FARM_PHOTOS[local], 'Registro fotográfico'));
+  if(!bigPoly) return;
+  const pt = interiorPoint(bigPoly);
+  photoMarkersLayer.addLayer(makePhotoMarker(pt[1], pt[0], FARM_PHOTOS[local], 'Registro fotográfico'));
 });
 if(LAYER_DEFS.find(d=>d.id==='reflorestamento' && d.defaultOn)) photoMarkersLayer.addTo(map);
 
