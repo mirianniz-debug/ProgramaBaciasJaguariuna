@@ -605,7 +605,7 @@ const LAYER_DEFS = [
     desc:'Áreas reflorestadas em propriedades participantes do programa',
     color:'#1f8a4c', fillOpacity:0.6, weight:1.6, dashArray:null,
     defaultOn:true, data:DATA_REFLORESTAMENTO,
-    popup:p=>[['Propriedade',p.Local]],
+    popup:p=>[['Propriedade',p.Local],['Área',p.Area_ha!=null?p.Area_ha.toLocaleString('pt-BR')+' ha':null]],
     popupImage:p=>FARM_PHOTOS[p.Local] || null
   },
   {
