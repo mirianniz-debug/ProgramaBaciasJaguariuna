@@ -555,30 +555,29 @@ fetch('data/dados.json')
   const DATA_REMANESCENTES = D.REMANESCENTES;
 
 /* Fotos de antes/depois por propriedade (quando disponíveis) */
-const FARM_PHOTOS = {
-  'Fazenda Maripá': [
-    { src: 'images/foto1.jpg',
-      caption: 'Área Reflorestada 1 — Google Earth, 2019 → 2022 → 2026' }
-  ],
-  'Fazenda São João I': [
-    { src: 'images/foto2.jpg',
-      caption: 'Área Reflorestada 2 — Google Earth, 2015 → 2022 → 2026' }
-  ],
-  'Fazenda Macatuba': [
-    { src: 'images/foto3.jpg',
-      caption: 'Área Reflorestada 3 — imagens Airbus, 2022 → 2026' }
-  ],
-  'Fazenda Nossa Senhora de Lourdes': [
-    { src: 'images/foto3.jpg',
-      caption: 'Área Reflorestada 3 — imagens Airbus, 2022 → 2026' },
-    { src: 'images/foto4.jpg',
-      caption: 'Área Reflorestada 4 — imagens Airbus, 2022 → 2026' }
-  ],
-  'Reflorestamento - Fazenda Bela Vista': [
-    { src: 'images/foto4.jpg',
-      caption: 'Área Reflorestada 4 — imagens Airbus, 2022 → 2026' }
-  ]
-};
+/* Cada foto aparece UMA vez, num único ícone. Quando a imagem mostra áreas de
+   mais de uma propriedade (fotos 3 e 4), o grupo lista todas elas e a legenda
+   cita as duas; "scene" é o ponto aproximado [lon, lat] da cena fotografada. */
+const PHOTO_GROUPS = [
+  { locals:['Fazenda Maripá'], title:'Registro fotográfico',
+    photos:[{ src:'images/foto1.jpg',
+      caption:'Área Reflorestada 1 — Google Earth, 2019 → 2022 → 2026' }] },
+  { locals:['Fazenda São João I'], title:'Registro fotográfico',
+    photos:[{ src:'images/foto2.jpg',
+      caption:'Área Reflorestada 2 — Google Earth, 2015 → 2022 → 2026' }] },
+  { locals:['Fazenda Macatuba','Fazenda Nossa Senhora de Lourdes'],
+    title:'Macatuba e Nossa Senhora de Lourdes', scene:[-47.0360,-22.6997],
+    photos:[{ src:'images/foto3.jpg',
+      caption:'Área Reflorestada 3 — imagens Airbus, 2022 → 2026' }] },
+  { locals:['Fazenda Nossa Senhora de Lourdes','Reflorestamento - Fazenda Bela Vista'],
+    title:'Nossa Senhora de Lourdes e Bela Vista', scene:[-47.0478,-22.6937],
+    photos:[{ src:'images/foto4.jpg',
+      caption:'Área Reflorestada 4 — imagens Airbus, 2022 → 2026' }] }
+];
+/* Fotos exibidas ao clicar nos polígonos: só as de propriedade única. Fotos
+   compartilhadas por duas propriedades ficam apenas no ícone do grupo. */
+const FARM_PHOTOS = {};
+PHOTO_GROUPS.forEach(g=>{ if(g.locals.length===1) FARM_PHOTOS[g.locals[0]] = g.photos; });
 
 /* Fotos de instalação de biodigestores, indexadas internamente pelo nome da
    propriedade (não exibido no popup) — só a foto/legenda genérica aparece. */
@@ -952,25 +951,31 @@ function interiorPoint(poly){
   }
   return best || [ring[0][0],ring[0][1]];
 }
-Object.keys(FARM_PHOTOS).forEach(local=>{
-  const feats = (DATA_REFLORESTAMENTO.features||[]).filter(f=>f.properties.Local===local);
+PHOTO_GROUPS.forEach(grp=>{
+  const feats = (DATA_REFLORESTAMENTO.features||[]).filter(f=>grp.locals.includes(f.properties.Local));
   if(!feats.length) return;
-  /* Ícone dentro do MAIOR polígono da propriedade (o centro de todas as partes
-     pode cair longe de qualquer área reflorestada). */
-  let bigPoly=null, bigArea=0;
+  /* Ícone dentro de UM polígono: o maior da propriedade (grupo de uma só) ou o
+     mais próximo da cena fotografada (grupo de duas) — o centro de todas as
+     partes pode cair longe de qualquer área reflorestada. */
+  let pick=null, pickScore=-1;
   feats.forEach(f=>{
     const g = f.geometry;
     const polys = g.type==='MultiPolygon' ? g.coordinates : [g.coordinates];
     polys.forEach(poly=>{
       const ring = poly[0];
       const lat0 = ring.reduce((s,p)=>s+p[1],0)/ring.length;
+      if(grp.scene){   // só polígonos a até ~400 m da cena fotografada
+        const cx = ring.reduce((s,p)=>s+p[0],0)/ring.length;
+        const d = Math.hypot((cx-grp.scene[0])*Math.cos(lat0*Math.PI/180), lat0-grp.scene[1]);
+        if(d>0.0035) return;
+      }
       const area = ringAreaM2(ring, lat0);
-      if(area>bigArea){bigArea=area;bigPoly=poly;}
+      if(area>pickScore){pickScore=area;pick=poly;}
     });
   });
-  if(!bigPoly) return;
-  const pt = interiorPoint(bigPoly);
-  photoMarkersLayer.addLayer(makePhotoMarker(pt[1], pt[0], FARM_PHOTOS[local], 'Registro fotográfico'));
+  if(!pick) return;
+  const pt = interiorPoint(pick);
+  photoMarkersLayer.addLayer(makePhotoMarker(pt[1], pt[0], grp.photos, grp.title));
 });
 if(LAYER_DEFS.find(d=>d.id==='reflorestamento' && d.defaultOn)) photoMarkersLayer.addTo(map);
 
